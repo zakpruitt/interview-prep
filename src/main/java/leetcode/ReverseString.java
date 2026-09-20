@@ -1,3 +1,5 @@
+package leetcode;
+
 public class ReverseString {
 
     // https://leetcode.com/explore/interview/card/top-interview-questions-easy/127/strings/879/
