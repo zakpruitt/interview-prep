@@ -39,4 +39,8 @@ public class ListNode {
         }
         return values;
     }
+
+    public ListNode getNext() {
+        return next;
+    }
 }
