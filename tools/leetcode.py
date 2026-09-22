@@ -119,15 +119,35 @@ def javadoc(question, url):
     return "\n".join(body)
 
 
+def snippet_class(question):
+    """The class LeetCode declares, which for design problems isn't 'Solution'.
+
+    LRU Cache ships 'class LRUCache', and its constructor has to keep that name,
+    so the file has to be named after it rather than after the slug.
+    """
+    snippet = java_snippet(question)
+    if not snippet:
+        return None
+    match = re.search(r"^(?:public\s+)?class\s+(\w+)", snippet, flags=re.M)
+    if match and match.group(1) != "Solution":
+        return match.group(1)
+    return None
+
+
+def java_snippet(question):
+    return next((s["code"] for s in question["codeSnippets"]
+                 if s["langSlug"] == "java"), None)
+
+
 def solution_source(question, name, url):
-    snippet = next((s["code"] for s in question["codeSnippets"]
-                    if s["langSlug"] == "java"), None)
+    snippet = java_snippet(question)
     if snippet:
         body = snippet.strip()
         # Drop the leading "Definition for ListNode/TreeNode" comment: this
         # project ships real ListNode and TreeNode classes in the package.
         body = re.sub(r"\A/\*.*?\*/\s*", "", body, flags=re.S)
-        # LeetCode always names the class Solution; use our problem name instead.
+        # 'Solution' gets renamed to the problem; a class LeetCode named itself
+        # (design problems) already matches `name` and is left alone.
         body = re.sub(r"^class Solution\b", "class " + name, body, flags=re.M)
         # The snippet leaves method bodies empty, which doesn't compile.
         body = re.sub(r"(\)\s*\{)[ \t]*\n[ \t]*\n?([ \t]*\})",
@@ -153,6 +173,18 @@ def test_source(question, name, url, solution):
     example_block = "\n".join(" * %s" % line for line in examples) or " * (none)"
     methods = [m for m in method_signatures(solution) if m != name]
     target = methods[0] if methods else "solve"
+
+    # Design problems declare a constructor with arguments, so the instance
+    # can't be a no-arg field -- build it inside the test instead.
+    ctor = re.search(r"public\s+%s\s*\(\s*([^)]*?)\s*\)" % re.escape(name), solution)
+    if ctor and ctor.group(1):
+        setup = ("    // constructor takes (%s)\n"
+                 "    // %s solution = new %s(...);" % (ctor.group(1), name, name))
+        build = "        // TODO: build the %s and assert against .%s(...)" % (name, target)
+    else:
+        setup = "    private final %s solution = new %s();" % (name, name)
+        build = "        // TODO: assert against solution.%s(...)" % target
+
     return """package %s;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -167,15 +199,15 @@ import org.junit.jupiter.api.Test;
  */
 class %sTest {
 
-    private final %s solution = new %s();
+%s
 
     @Test
     void example() {
-        // TODO: assert against solution.%s(...)
+%s
         fail("write the first test case");
     }
 }
-""" % (PACKAGE, question["title"], url, example_block, name, name, name, target)
+""" % (PACKAGE, question["title"], url, example_block, name, setup, build)
 
 
 def write(path, content, force):
@@ -203,7 +235,7 @@ def main():
         sys.exit("'%s' is a premium problem; its description isn't public." % slug)
 
     url = "https://leetcode.com/problems/%s/" % question["titleSlug"]
-    name = args.name or class_name(question["titleSlug"])
+    name = args.name or snippet_class(question) or class_name(question["titleSlug"])
     solution = solution_source(question, name, url)
 
     write(os.path.join(MAIN_DIR, name + ".java"), solution, args.force)

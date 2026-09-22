@@ -6,21 +6,34 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Valid Parentheses -- https://leetcode.com/problems/valid-parentheses/
- *
- * LeetCode example input (one argument per line, grouped per case):
- * "()"
- * "()[]{}"
- * "(]"
- * "([])"
- * "([)]"
  */
 class ValidParenthesesTest {
 
     private final ValidParentheses solution = new ValidParentheses();
 
     @Test
-    void example() {
-        // TODO: assert against solution.isValid(...)
-        fail("write the first test case");
+    void acceptsMatchedPairs() {
+        assertTrue(solution.isValid("()"));
+        assertTrue(solution.isValid("()[]{}"));
+        assertTrue(solution.isValid("([])"));
+        assertTrue(solution.isValid("({[]})"));
+    }
+
+    @Test
+    void rejectsMismatchedTypes() {
+        assertFalse(solution.isValid("(]"));
+        assertFalse(solution.isValid("([)]"));
+    }
+
+    @Test
+    void rejectsUnclosedOpeners() {
+        assertFalse(solution.isValid("("));
+        assertFalse(solution.isValid("(["));
+    }
+
+    @Test
+    void rejectsCloserWithNothingOpen() {
+        assertFalse(solution.isValid("]"));
+        assertFalse(solution.isValid("(){}}{"));
     }
 }

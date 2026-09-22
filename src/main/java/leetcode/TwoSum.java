@@ -9,17 +9,15 @@ public class TwoSum {
     // https://leetcode.com/explore/interview/card/top-interview-questions-easy/92/array/546/
 
     public int[] twoSum(int[] nums, int target) throws Exception {
-        Map<Integer, Integer> seen = new HashMap<>();
-
+        Map<Integer, Integer> map = new HashMap<>();
         for (int i = 0; i < nums.length; i++) {
             int difference = target - nums[i];
-            if (seen.containsKey(difference)) {
-                return new int[]{seen.get(difference), i};
+            if (map.containsKey(difference)) {
+                return new int[]{map.get(difference), i};
             }
-            seen.put(nums[i], i);
         }
 
-        return new int[]{1, 1};
+        return null;
     }
 
 }
